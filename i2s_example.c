@@ -49,12 +49,9 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 static __attribute__((aligned(8))) pio_i2s i2s;
 
 static void process_audio(const int32_t* input, int32_t* output, size_t num_frames) {
-    static int poop = 0;
     // Just copy the input to the output
     for (size_t i = 0; i < num_frames * 2; i++) {
-        output[i] = (input[i] >> 10) << 16;
-        output[i] = output[i];// | (output[i] >> 16);
-        poop++;
+        output[i] = (input[i] >> 16) << 16;
     }   
 }
 
