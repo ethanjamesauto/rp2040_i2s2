@@ -25,11 +25,12 @@
 #include <string.h>
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
-#include "hardware/i2c.h"
 #include "hardware/irq.h"
 #include "hardware/pio.h"
 #include "i2s.h"
 #include "pico/stdlib.h"
+#include "tusb.h"
+
 
 // I2C defines
 // This example uses I2C0 on GPIO4 (SDA) and GPIO5 (SCL) running at 100KHz.
@@ -48,10 +49,13 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 static __attribute__((aligned(8))) pio_i2s i2s;
 
 static void process_audio(const int32_t* input, int32_t* output, size_t num_frames) {
+    static int poop = 0;
     // Just copy the input to the output
     for (size_t i = 0; i < num_frames * 2; i++) {
-        output[i] = input[i];
-    }
+        output[i] = (input[i] >> 10) << 16;
+        output[i] = output[i];// | (output[i] >> 16);
+        poop++;
+    }   
 }
 
 static void dma_i2s_in_handler(void) {
@@ -72,46 +76,31 @@ static void dma_i2s_in_handler(void) {
 int main() {
     // Set a 132.000 MHz system clock to more evenly divide the audio frequencies
     set_sys_clock_khz(132000, true);
+    tusb_init();
     stdio_init_all();
 
     printf("System Clock: %lu\n", clock_get_hz(clk_sys));
 
-    // Init GPIO LED
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
-
-    // I2C Initialisation. Using it at 100Khz.
-    i2c_init(I2C_PORT, 100 * 1000);
-
-    gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
-    gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
-    gpio_set_pulls(I2C_SDA, true, false);
-    gpio_set_pulls(I2C_SCL, true, false);
-    gpio_set_drive_strength(I2C_SDA, GPIO_DRIVE_STRENGTH_12MA);
-    gpio_set_drive_strength(I2C_SCL, GPIO_DRIVE_STRENGTH_12MA);
-    gpio_set_slew_rate(I2C_SDA, GPIO_SLEW_RATE_FAST);
-    gpio_set_slew_rate(I2C_SCL, GPIO_SLEW_RATE_FAST);
-
     // Here, do whatever you need to set up your codec for proper operation.
     // Some codecs require register configuration over I2C, for example.
 
-    // Note: it is usually best to configure the codec here, and then enable it
-    //       after starting the I2S clocks, below.
+    i2s_config my_config;
+    my_config.fs = 48000;
+    my_config.sck_mult = 256;
+    my_config.bit_depth = 16;
+    my_config.sck_pin = 21;
+    my_config.dout_pin = 18;
+    my_config.din_pin = 22;
+    my_config.clock_pin_base = 19;
+    my_config.sck_enable = true;
 
-    i2s_program_start_synched(pio0, &i2s_config_default, dma_i2s_in_handler, &i2s);
-
+    i2s_program_start_synched(pio0, &my_config, dma_i2s_in_handler, &i2s);
     // Enable the (already configured) codec here.
 
     puts("i2s_example started.");
 
-    // Blink the LED so we know we started everything correctly.
-
-    while (true) {
-        gpio_put(LED_PIN, 1);
-        sleep_ms(250);
-        gpio_put(LED_PIN, 0);
-        sleep_ms(250);
+    while(1) {
+        tud_task(); // tinyusb device task
     }
-
     return 0;
 }

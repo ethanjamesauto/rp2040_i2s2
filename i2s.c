@@ -195,7 +195,14 @@ static void i2s_sync_program_init(PIO pio, const i2s_config* config, pio_i2s* i2
         i2s->sm_sck = pio_claim_unused_sm(pio, true);
         i2s->sm_mask |= (1u << i2s->sm_sck);
         offset = pio_add_program(pio, &i2s_sck_program);
-        i2s_sck_program_init(pio, i2s->sm_sck, offset, config->sck_pin);
+        i2s_sck_program_init(pio, i2s->sm_sck, offset, 21u);
+        pio_sm_set_clkdiv_int_frac(pio, i2s->sm_sck, clocks.sck_d, clocks.sck_f);
+
+        // SCK block
+        i2s->sm_sck = pio_claim_unused_sm(pio, true);
+        i2s->sm_mask |= (1u << i2s->sm_sck);
+        offset = pio_add_program(pio, &i2s_sck_program);
+        i2s_sck_program_init(pio, i2s->sm_sck, offset, 17u);
         pio_sm_set_clkdiv_int_frac(pio, i2s->sm_sck, clocks.sck_d, clocks.sck_f);
     }
 
@@ -203,7 +210,7 @@ static void i2s_sync_program_init(PIO pio, const i2s_config* config, pio_i2s* i2
     i2s->sm_din = pio_claim_unused_sm(pio, true);
     i2s->sm_mask |= (1u << i2s->sm_din);
     offset = pio_add_program(pio, &i2s_in_slave_program);
-    i2s_in_slave_program_init(pio, i2s->sm_din, offset, config->din_pin);
+    i2s_in_slave_program_init(pio, i2s->sm_din, offset, 23u, 20u, config->din_pin);
     pio_sm_set_clkdiv_int_frac(pio, i2s->sm_din, clocks.sck_d, clocks.sck_f);
 
     // Out block, clocked with BCK
@@ -211,7 +218,7 @@ static void i2s_sync_program_init(PIO pio, const i2s_config* config, pio_i2s* i2
     i2s->sm_mask |= (1u << i2s->sm_dout);
     offset = pio_add_program(pio, &i2s_out_master_program);
     i2s_out_master_program_init(pio, i2s->sm_dout, offset, config->bit_depth, config->dout_pin, config->clock_pin_base);
-    pio_sm_set_clkdiv_int_frac(pio, i2s->sm_dout, clocks.bck_d, clocks.bck_f);
+    pio_sm_set_clkdiv_int_frac(pio, i2s->sm_dout, clocks.bck_d, clocks.bck_f);//*/
 }
 
 void i2s_program_start_slaved(PIO pio, const i2s_config* config, void (*dma_handler)(void), pio_i2s* i2s) {

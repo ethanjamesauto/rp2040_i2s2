@@ -22,6 +22,7 @@ cmake_minimum_required(VERSION 3.13)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+set(PICO_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/pico-sdk/)
 
 # Set standard CMake build type options
 ## Default C compiler flags
@@ -47,6 +48,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_ASM_FLAGS_RELWITHDEBINFO_INIT}" CACH
 include(pico_sdk_import.cmake)
 project(i2s_example C CXX ASM)
 pico_sdk_init()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/pico-ice-sdk)
 
 add_executable(i2s_example i2s.c)
 
@@ -60,7 +62,7 @@ pico_set_program_version(i2s_example "1.0.1")
 # no_flash means the target is to run from RAM
 # pico_set_binary_type(i2s_test no_flash)
 
-pico_enable_stdio_uart(i2s_example 1)
+pico_enable_stdio_uart(i2s_example 0)
 pico_enable_stdio_usb(i2s_example 0)
 
 # Add the standard library to the build
@@ -68,10 +70,11 @@ target_link_libraries(i2s_example pico_stdlib)
 
 # Add any user requested libraries
 target_link_libraries(i2s_example
-        hardware_i2c
         hardware_dma
         hardware_pio
         hardware_clocks
+        pico_ice_sdk
+        pico_stdio_usb
         )
 
 pico_add_extra_outputs(i2s_example)
